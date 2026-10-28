@@ -21,12 +21,20 @@ def models_list():
     models.append(('enet', ElasticNet))
     return models
 
-def predictions(model, data_X, data_y):
-    # Perform predictions using the specified model
-    selected_model = model(random_state=1)
-    selected_model.fit(data_X, data_y)
-    val_predictions = selected_model.predict(data_X)
-    return val_predictions
+
+def predictions(model, train_X, train_y, prediction_X):
+    """Fit a regression model and predict values for the supplied data."""
+
+    model_instance = model()
+
+    # Set a fixed random seed when the model supports it.
+    if "random_state" in model_instance.get_params():
+        model_instance.set_params(random_state=1)
+
+    model_instance.fit(train_X, train_y)
+
+    return model_instance.predict(prediction_X)
+
          
 def main():
     # Parse command-line arguments
@@ -52,18 +60,28 @@ def main():
     # Spot Check Algorithms
     models = models_list()
 
+
     for name, model in models:
-        # Perform predictions using the model
-        val_predictions = predictions(model, X, y)
-        
-        # Calculate mean absolute error
-        print(mean_absolute_error(y, val_predictions))
-        
-        # Store z-scores of predictions in regression_data
-        regression_data[name] = stats.zscore(val_predictions)
-        
-        # Save regression_data to a new CSV file
-        regression_data.to_csv(f"{os.path.splitext(argv.csv)[0]}_bpi.csv", index=False)
+        # Evaluate the model on held-out validation data
+        val_predictions = predictions(
+            model, train_X, train_y, val_X
+        )
+        val_mae = mean_absolute_error(val_y, val_predictions)
+
+        print(f"{name} validation MAE: {val_mae:.4f}")
+
+        # Fit on the full dataset to generate BPI scores for all rows
+        full_predictions = predictions(model, X, y, X)
+
+        # Standardize predictions into z-scores
+        regression_data[name] = stats.zscore(full_predictions)
+
+    # Save the completed results once, after all models finish
+    output_file = f"{os.path.splitext(argv.csv)[0]}_bpi.csv"
+    regression_data.to_csv(output_file, index=False)
+
+    print(f"Saved BPI results to: {output_file}")
+
 
 def get_args():
     # Parse command-line arguments
