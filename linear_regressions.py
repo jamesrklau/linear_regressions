@@ -14,6 +14,7 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from pandas.api.types import is_numeric_dtype, is_timedelta64_dtype
 
 
 def models_list():
@@ -28,12 +29,32 @@ def models_list():
     ]
 
 
+
 def build_preprocessor(X):
     """Build preprocessing steps based on feature column types."""
-    numeric_features = X.select_dtypes(include="number").columns.tolist()
+
+    numeric_features = [
+        column
+        for column in X.columns
+        if is_numeric_dtype(X[column].dtype)
+        and not is_timedelta64_dtype(X[column].dtype)
+    ]
     categorical_features = X.select_dtypes(
         include=["object", "category", "string", "bool"]
     ).columns.tolist()
+
+    supported_features = set(numeric_features + categorical_features)
+    unsupported_features = [
+        column for column in X.columns
+        if column not in supported_features
+    ]
+
+    if unsupported_features:
+        raise ValueError(
+            "Unsupported feature column types: "
+            f"{unsupported_features}. "
+            "Use numeric or categorical feature columns."
+        )
 
     transformers = []
 
@@ -71,7 +92,6 @@ def build_preprocessor(X):
         )
 
     return ColumnTransformer(transformers=transformers)
-
 
 def predictions(model, train_X, train_y, prediction_X):
     """Fit a complete preprocessing and prediction pipeline."""

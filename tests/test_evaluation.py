@@ -5,6 +5,9 @@ import pandas as pd
 from linear_regressions import evaluate_models
 from linear_regressions import predictions
 from sklearn.linear_model import Ridge
+import pytest
+
+from linear_regressions import main
 
 def make_sample_data():
     """Create a small, predictable dataset for testing."""
@@ -99,3 +102,57 @@ def test_predictions_handle_missing_and_categorical_features():
     assert len(result) == 2
     assert np.isfinite(result).all()
 
+
+
+
+def test_build_preprocessor_rejects_unsupported_feature_types():
+    from linear_regressions import build_preprocessor
+
+    X = pd.DataFrame({"unsupported": pd.to_timedelta([1, 2], unit="D")})
+
+    with pytest.raises(ValueError, match="numeric or categorical"):
+        build_preprocessor(X)
+
+def test_main_rejects_missing_target_column(monkeypatch, tmp_path):
+    csv_file = tmp_path / "sample.csv"
+    pd.DataFrame({"feature": [1, 2, 3, 4]}).to_csv(
+        csv_file, index=False
+    )
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "linear_regressions.py",
+            "--csv",
+            str(csv_file),
+            "--var_name",
+            "missing_target",
+        ],
+    )
+
+    with pytest.raises(ValueError, match="was not found"):
+        main()
+
+
+def test_main_rejects_non_numeric_target(monkeypatch, tmp_path):
+    csv_file = tmp_path / "sample.csv"
+    pd.DataFrame(
+        {
+            "feature": [1, 2, 3, 4],
+            "target": ["low", "medium", "high", "low"],
+        }
+    ).to_csv(csv_file, index=False)
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "linear_regressions.py",
+            "--csv",
+            str(csv_file),
+            "--var_name",
+            "target",
+        ],
+    )
+
+    with pytest.raises(ValueError, match="must contain numeric"):
+        main()
