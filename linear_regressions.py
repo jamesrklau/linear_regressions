@@ -5,11 +5,15 @@ import argparse
 from pathlib import Path
 
 import pandas as pd
+from sklearn.compose import ColumnTransformer
 from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import AdaBoostRegressor, GradientBoostingRegressor
+from sklearn.impute import SimpleImputer
 from sklearn.linear_model import Ridge, Lasso, ElasticNet
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
 def models_list():
@@ -24,16 +28,68 @@ def models_list():
     ]
 
 
+def build_preprocessor(X):
+    """Build preprocessing steps based on feature column types."""
+    numeric_features = X.select_dtypes(include="number").columns.tolist()
+    categorical_features = X.select_dtypes(
+        include=["object", "category", "string", "bool"]
+    ).columns.tolist()
+
+    transformers = []
+
+    if numeric_features:
+        numeric_pipeline = Pipeline(
+            steps=[
+                ("imputer", SimpleImputer(strategy="median")),
+                ("scaler", StandardScaler()),
+            ]
+        )
+        transformers.append(
+            ("numeric", numeric_pipeline, numeric_features)
+        )
+
+    if categorical_features:
+        categorical_pipeline = Pipeline(
+            steps=[
+                ("imputer", SimpleImputer(strategy="most_frequent")),
+                (
+                    "encoder",
+                    OneHotEncoder(
+                        handle_unknown="ignore",
+                        sparse_output=False,
+                    ),
+                ),
+            ]
+        )
+        transformers.append(
+            ("categorical", categorical_pipeline, categorical_features)
+        )
+
+    if not transformers:
+        raise ValueError(
+            "The dataset must contain numeric or categorical feature columns."
+        )
+
+    return ColumnTransformer(transformers=transformers)
+
+
 def predictions(model, train_X, train_y, prediction_X):
-    """Fit a model on training data and predict supplied observations."""
+    """Fit a complete preprocessing and prediction pipeline."""
     model_instance = model()
 
     # Make stochastic models reproducible when supported.
     if "random_state" in model_instance.get_params():
         model_instance.set_params(random_state=1)
 
-    model_instance.fit(train_X, train_y)
-    return model_instance.predict(prediction_X)
+    pipeline = Pipeline(
+        steps=[
+            ("preprocessor", build_preprocessor(train_X)),
+            ("model", model_instance),
+        ]
+    )
+
+    pipeline.fit(train_X, train_y)
+    return pipeline.predict(prediction_X)
 
 
 def evaluate_models(train_X, train_y, val_X, val_y):
@@ -76,7 +132,9 @@ def get_args():
 def main():
     args = get_args()
 
-    # Load the dataset.
+    if not args.csv.is_file():
+        raise FileNotFoundError(f"Input CSV file not found: {args.csv}")
+
     data = pd.read_csv(args.csv)
 
     if args.var_name not in data.columns:
@@ -87,28 +145,39 @@ def main():
     # Remove rows where the target is missing.
     data = data.dropna(subset=[args.var_name]).reset_index(drop=True)
 
-    # Separate the target from numerical input features.
-    y = data[args.var_name]
-    X = data.drop(columns=[args.var_name]).select_dtypes(include="number")
-
-    if X.empty:
-        raise ValueError("The dataset must contain numerical feature columns.")
-
     if len(data) < 4:
         raise ValueError("At least four rows with a target value are required.")
+
+    y = data[args.var_name]
 
     if not pd.api.types.is_numeric_dtype(y):
         raise ValueError("The target column must contain numeric values.")
 
-    if y.isna().any():
-        raise ValueError("The target column contains missing values.")
+    X = data.drop(columns=[args.var_name])
 
-    # Use one fixed split so every model sees the same training and validation rows.
+    if X.empty:
+        raise ValueError("The dataset must contain feature columns.")
+
+    if not (
+        X.select_dtypes(include="number").shape[1]
+        or X.select_dtypes(
+            include=["object", "category", "string", "bool"]
+        ).shape[1]
+    ):
+        raise ValueError(
+            "No supported feature columns found. "
+            "Use numeric or categorical features."
+        )
+
+    if not y.map(lambda value: pd.notna(value) and value != float("inf")
+                 and value != float("-inf")).all():
+        raise ValueError("The target column must contain finite numeric values.")
+
+    # Use one fixed split for a fair model comparison.
     train_X, val_X, train_y, val_y = train_test_split(
         X, y, test_size=0.25, random_state=0
     )
 
-    # Evaluate all models using only the held-out validation data.
     results = evaluate_models(train_X, train_y, val_X, val_y)
 
     print("\nRegression Model Comparison")
@@ -117,7 +186,6 @@ def main():
     print(f"Validation rows: {len(val_X)}\n")
     print(results.to_string(index=False, float_format=lambda value: f"{value:.4f}"))
 
-    # Save the evaluation report beside the input CSV.
     output_file = args.csv.with_name(
         f"{args.csv.stem}_model_comparison.csv"
     )

@@ -9,3 +9,9 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Generated model comparison reports
+examples/*_model_comparison.csv
+
+# Legacy generated BPI reports
+examples/*_bpi.csv
