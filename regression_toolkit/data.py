@@ -1,3 +1,4 @@
+
 """Functions for loading and validating regression datasets."""
 
 from pathlib import Path
@@ -19,6 +20,17 @@ def load_dataset(
         raise FileNotFoundError(f"Input CSV file not found: {csv_path}")
 
     data = pd.read_csv(csv_path)
+
+    return validate_dataset(data, target_column)
+
+
+def validate_dataset(
+    data: pd.DataFrame,
+    target_column: str,
+) -> tuple[pd.DataFrame, pd.Series]:
+    """Validate a DataFrame and return its features and target values."""
+
+    data = data.copy()
 
     if data.empty:
         raise ValueError("The input CSV contains no data rows.")

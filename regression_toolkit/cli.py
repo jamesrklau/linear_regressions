@@ -94,7 +94,7 @@ def main():
         random_state=args.random_state
     )
 
-    results = evaluate_models(train_X, train_y, val_X, val_y, model_random_state=args.model_random_state)
+    results, prediction_results = evaluate_models(train_X, train_y, val_X, val_y, model_random_state=args.model_random_state)
 
     print("\nRegression Model Comparison")
     print(f"Target: {args.var_name}")

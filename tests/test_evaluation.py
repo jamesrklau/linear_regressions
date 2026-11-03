@@ -22,16 +22,23 @@ def make_sample_data():
     return X, y
 
 
+
 def test_evaluation_returns_all_expected_models_and_metrics():
     X, y = make_sample_data()
 
-    results = evaluate_models(
-        X.iloc[:30],
-        y.iloc[:30],
-        X.iloc[30:],
-        y.iloc[30:],
+    train_X = X.iloc[:30]
+    train_y = y.iloc[:30]
+    val_X = X.iloc[30:]
+    val_y = y.iloc[30:]
+
+    results, prediction_results = evaluate_models(
+        train_X,
+        train_y,
+        val_X,
+        val_y,
     )
 
+    # Check the evaluation metrics
     assert len(results) == 6
     assert set(results["Model"]) == {
         "Baseline (Mean)",
@@ -43,11 +50,20 @@ def test_evaluation_returns_all_expected_models_and_metrics():
     }
     assert {"MAE", "RMSE", "R2"}.issubset(results.columns)
 
+    # Check the prediction results
+    assert "actual" in prediction_results.columns
+    assert len(prediction_results) == len(val_y)
+    assert prediction_results["actual"].equals(val_y)
+
+    for model_name in results["Model"]:
+        assert model_name in prediction_results.columns
+
+
 
 def test_evaluation_metrics_are_finite():
     X, y = make_sample_data()
 
-    results = evaluate_models(
+    results, prediction_results = evaluate_models(
         X.iloc[:30],
         y.iloc[:30],
         X.iloc[30:],
@@ -62,7 +78,7 @@ def test_evaluation_metrics_are_finite():
 def test_results_are_sorted_by_mae():
     X, y = make_sample_data()
 
-    results = evaluate_models(
+    results, prediction_results = evaluate_models(
         X.iloc[:30],
         y.iloc[:30],
         X.iloc[30:],
@@ -248,6 +264,7 @@ def test_cli_rejects_invalid_test_size(monkeypatch, test_size):
     with pytest.raises(SystemExit):
         get_args()
 
+
 def test_evaluation_is_reproducible():
     X, y = make_sample_data()
 
@@ -256,7 +273,7 @@ def test_evaluation_is_reproducible():
     val_X = X.iloc[30:]
     val_y = y.iloc[30:]
 
-    first_results = evaluate_models(
+    first_results, first_predictions = evaluate_models(
         train_X,
         train_y,
         val_X,
@@ -264,7 +281,7 @@ def test_evaluation_is_reproducible():
         model_random_state=42,
     )
 
-    second_results = evaluate_models(
+    second_results, second_predictions = evaluate_models(
         train_X,
         train_y,
         val_X,
@@ -276,6 +293,12 @@ def test_evaluation_is_reproducible():
         first_results,
         second_results,
     )
+
+    pd.testing.assert_frame_equal(
+        first_predictions,
+        second_predictions,
+    )
+
 
 @pytest.mark.parametrize(
     "option",
