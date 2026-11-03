@@ -1,6 +1,6 @@
 from regression_toolkit.evaluation import evaluate_models
 from regression_toolkit.models import predictions, build_preprocessor
-from regression_toolkit.cli import main
+from regression_toolkit.cli import main, get_args
 from regression_toolkit.data import load_dataset
 
 import numpy as np
@@ -186,3 +186,93 @@ def test_load_dataset_rejects_infinite_target(tmp_path):
 
     with pytest.raises(ValueError, match="finite numeric values"):
         load_dataset(csv_file, "score")
+
+def test_cli_default_arguments(monkeypatch):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "linear_regressions.py",
+            "--csv",
+            "sample.csv",
+            "--var_name",
+            "target",
+        ],
+    )
+
+    args = get_args()
+
+    assert args.test_size == 0.25
+    assert args.random_state == 0
+    assert args.model_random_state == 1
+
+
+def test_cli_custom_arguments(monkeypatch):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "linear_regressions.py",
+            "--csv",
+            "sample.csv",
+            "--var_name",
+            "target",
+            "--test_size",
+            "0.30",
+            "--random_state",
+            "42",
+            "--model_random_state",
+            "42",
+        ],
+    )
+
+    args = get_args()
+
+    assert args.test_size == 0.30
+    assert args.random_state == 42
+    assert args.model_random_state == 42
+
+@pytest.mark.parametrize("test_size", ["0", "1", "1.5", "-0.2"])
+def test_cli_rejects_invalid_test_size(monkeypatch, test_size):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "linear_regressions.py",
+            "--csv",
+            "sample.csv",
+            "--var_name",
+            "target",
+            "--test_size",
+            test_size,
+        ],
+    )
+
+    with pytest.raises(SystemExit):
+        get_args()
+
+def test_evaluation_is_reproducible():
+    X, y = make_sample_data()
+
+    train_X = X.iloc[:30]
+    train_y = y.iloc[:30]
+    val_X = X.iloc[30:]
+    val_y = y.iloc[30:]
+
+    first_results = evaluate_models(
+        train_X,
+        train_y,
+        val_X,
+        val_y,
+        model_random_state=42,
+    )
+
+    second_results = evaluate_models(
+        train_X,
+        train_y,
+        val_X,
+        val_y,
+        model_random_state=42,
+    )
+
+    pd.testing.assert_frame_equal(
+        first_results,
+        second_results,
+    )

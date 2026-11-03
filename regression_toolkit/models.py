@@ -84,13 +84,15 @@ def build_preprocessor(X):
 
     return ColumnTransformer(transformers=transformers)
 
-def predictions(model, train_X, train_y, prediction_X):
+def predictions(model, train_X, train_y, prediction_X, random_state=1):
     """Fit a complete preprocessing and prediction pipeline."""
     model_instance = model()
 
     # Make stochastic models reproducible when supported.
     if "random_state" in model_instance.get_params():
-        model_instance.set_params(random_state=1)
+        model_instance.set_params(random_state=random_state)
+    else:
+        model_instance = model()
 
     pipeline = Pipeline(
         steps=[

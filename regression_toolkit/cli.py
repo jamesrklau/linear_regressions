@@ -7,17 +7,62 @@ from sklearn.model_selection import train_test_split
 from regression_toolkit.data import load_dataset
 from regression_toolkit.evaluation import evaluate_models
 
+def validate_test_size(value):
+    """Validate the proportion of data reserved for validation."""
+    try:
+        value = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            "Test size must be a number."
+        )
+
+    if not 0 < value < 1:
+        raise argparse.ArgumentTypeError(
+            "Test size must be greater than 0 and less than 1."
+        )
+
+    return value
+
 def get_args():
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         description="Compare regression models on a CSV dataset."
     )
+
     parser.add_argument(
-        "-C", "--csv", type=Path, required=True, help="Path to input CSV file"
+        "-C", "--csv",
+        type=Path,
+        required=True,
+        help="Path to input CSV file"
     )
+
     parser.add_argument(
-        "-V", "--var_name", required=True, help="Name of the target column"
+        "-V", "--var_name",
+        required=True,
+        help="Name of the target column"
     )
+
+    parser.add_argument(
+        "--test_size",
+        type=validate_test_size,
+        default=0.25,
+        help="Proportion of data reserved for validation (default: 0.25)"
+    )
+
+    parser.add_argument(
+        "--random_state",
+        type=int,
+        default=0,
+        help="Random seed for the train/validation split (default: 0)"
+    )
+
+    parser.add_argument(
+        "--model_random_state",
+        type=int,
+        default=1,
+        help="Random seed for model training (default: 1)"
+    )
+
     return parser.parse_args()
 
 def main():
@@ -27,10 +72,13 @@ def main():
 
     # Use one fixed split so every model sees the same rows.
     train_X, val_X, train_y, val_y = train_test_split(
-        X, y, test_size=0.25, random_state=0
+        X,
+        y,
+        test_size=args.test_size,
+        random_state=args.random_state
     )
 
-    results = evaluate_models(train_X, train_y, val_X, val_y)
+    results = evaluate_models(train_X, train_y, val_X, val_y, model_random_state=args.model_random_state)
 
     print("\nRegression Model Comparison")
     print(f"Target: {args.var_name}")
