@@ -23,6 +23,22 @@ def validate_test_size(value):
 
     return value
 
+def validate_random_state(value):
+    """Validate that a random seed is a non-negative integer."""
+    try:
+        value = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            "Random state must be an integer."
+        )
+
+    if value < 0:
+        raise argparse.ArgumentTypeError(
+            "Random state must be zero or greater."
+        )
+
+    return value
+
 def get_args():
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
@@ -51,14 +67,14 @@ def get_args():
 
     parser.add_argument(
         "--random_state",
-        type=int,
+        type=validate_random_state,
         default=0,
         help="Random seed for the train/validation split (default: 0)"
     )
 
     parser.add_argument(
         "--model_random_state",
-        type=int,
+        type=validate_random_state,
         default=1,
         help="Random seed for model training (default: 1)"
     )

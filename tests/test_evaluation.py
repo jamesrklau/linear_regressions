@@ -276,3 +276,27 @@ def test_evaluation_is_reproducible():
         first_results,
         second_results,
     )
+
+@pytest.mark.parametrize(
+    "option",
+    ["--random_state", "--model_random_state"],
+)
+@pytest.mark.parametrize("value", ["-1", "abc", "2.5"])
+def test_cli_rejects_invalid_random_states(
+    monkeypatch, option, value
+):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "linear_regressions.py",
+            "--csv",
+            "sample.csv",
+            "--var_name",
+            "target",
+            option,
+            value,
+        ],
+    )
+
+    with pytest.raises(SystemExit):
+        get_args()
