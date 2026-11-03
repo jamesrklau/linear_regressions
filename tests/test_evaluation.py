@@ -1,13 +1,13 @@
+from regression_toolkit.evaluation import evaluate_models
+from regression_toolkit.models import predictions, build_preprocessor
+from regression_toolkit.cli import main
+from regression_toolkit.data import load_dataset
 
 import numpy as np
 import pandas as pd
-
-from linear_regressions import evaluate_models
-from linear_regressions import predictions
 from sklearn.linear_model import Ridge
 import pytest
 
-from linear_regressions import main
 
 def make_sample_data():
     """Create a small, predictable dataset for testing."""
@@ -104,9 +104,7 @@ def test_predictions_handle_missing_and_categorical_features():
 
 
 
-
 def test_build_preprocessor_rejects_unsupported_feature_types():
-    from linear_regressions import build_preprocessor
 
     X = pd.DataFrame({"unsupported": pd.to_timedelta([1, 2], unit="D")})
 
@@ -156,3 +154,35 @@ def test_main_rejects_non_numeric_target(monkeypatch, tmp_path):
 
     with pytest.raises(ValueError, match="must contain numeric"):
         main()
+
+def test_load_dataset_returns_features_and_target(tmp_path):
+    csv_file = tmp_path / "sample.csv"
+
+    pd.DataFrame(
+        {
+            "hours": [2.0, 4.0, 6.0, 8.0],
+            "school": ["A", "B", "A", "B"],
+            "score": [50.0, 60.0, 70.0, 80.0],
+        }
+    ).to_csv(csv_file, index=False)
+
+    X, y = load_dataset(csv_file, "score")
+
+    assert list(X.columns) == ["hours", "school"]
+    assert y.name == "score"
+    assert len(X) == 4
+    assert len(y) == 4
+
+
+def test_load_dataset_rejects_infinite_target(tmp_path):
+    csv_file = tmp_path / "sample.csv"
+
+    pd.DataFrame(
+        {
+            "hours": [2.0, 4.0, 6.0, 8.0],
+            "score": [50.0, 60.0, float("inf"), 80.0],
+        }
+    ).to_csv(csv_file, index=False)
+
+    with pytest.raises(ValueError, match="finite numeric values"):
+        load_dataset(csv_file, "score")
