@@ -12,6 +12,7 @@ The goal is to make regression model evaluation straightforward, consistent, and
 
 <img width="1418" height="670" alt="Image" src="https://github.com/user-attachments/assets/1d77b073-4c2e-4519-bd1a-e58e7ed3e836" />
 <img width="1415" height="564" alt="Image" src="https://github.com/user-attachments/assets/97b732bd-14c1-48e1-99c5-4d1bf4b5ac89" />
+<img width="1407" height="700" alt="Image" src="https://github.com/user-attachments/assets/f4270160-7ffe-4126-8de5-eb389d0d7531" />
 
 ## Features
 
@@ -168,18 +169,15 @@ The dashboard allows you to:
 
 **Model Performance**
 
-<!-- Add screenshot showing the metrics table and best-performing model -->
-![Model Performance](docs/images/model-performance.png)
+<img width="1415" height="564" alt="Image" src="https://github.com/user-attachments/assets/97b732bd-14c1-48e1-99c5-4d1bf4b5ac89" />
 
 **Model Visualizations**
 
-<!-- Add screenshot showing actual vs predicted and residual analysis -->
-![Model Visualizations](docs/images/model-visualizations.png)
+<img width="1407" height="700" alt="Image" src="https://github.com/user-attachments/assets/f4270160-7ffe-4126-8de5-eb389d0d7531" />
 
 **Downloadable Results**
 
-<!-- Optional screenshot showing the download section -->
-![Download Results](docs/images/download-results.png)
+<img width="1415" height="564" alt="Image" src="https://github.com/user-attachments/assets/97b732bd-14c1-48e1-99c5-4d1bf4b5ac89" />
 
 ## Example Dataset
 
