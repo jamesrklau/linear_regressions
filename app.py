@@ -1,6 +1,7 @@
 
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 
 from sklearn.model_selection import train_test_split
 
@@ -14,6 +15,12 @@ st.set_page_config(
     page_icon="📊",
     layout="wide",
 )
+
+if "results" not in st.session_state:
+    st.session_state.results = None
+
+if "prediction_results" not in st.session_state:
+    st.session_state.prediction_results = None
 
 # Dashboard heading
 st.title("Regression Model Comparison Toolkit")
@@ -59,6 +66,12 @@ if uploaded_file is not None:
         # Read and preview the uploaded CSV
         df = pd.read_csv(uploaded_file)
 
+        # Clear previous results when a new dataset is uploaded
+        if st.session_state.get("uploaded_file_name") != uploaded_file.name:
+            st.session_state.results = None
+            st.session_state.prediction_results = None
+            st.session_state.uploaded_file_name = uploaded_file.name
+
         st.success("Dataset uploaded successfully!")
 
         st.subheader("Dataset Preview")
@@ -98,29 +111,111 @@ if uploaded_file is not None:
                     model_random_state=model_random_state,
                 )
 
-            st.success("Model comparison completed!")
+                st.session_state.results = results
+                st.session_state.prediction_results = prediction_results
 
-            st.subheader("Model Performance")
-
-            st.dataframe(
-                results,
-                hide_index=True,
-                use_container_width=True,
-            )
-
-            st.subheader("Best Performing Model")
-
-            best_model = results.iloc[0]
-
-            st.metric(
-                label="Best Model (lowest MAE)",
-                value=best_model["Model"],
-                delta=f"MAE: {best_model['MAE']:.3f}",
-                delta_color="off",
-            )
-
+            
     except Exception as error:
         st.error(f"Something went wrong: {error}")
 
 else:
     st.info("Upload a CSV file to get started.")
+
+if st.session_state.results is not None:
+
+    results = st.session_state.results
+    prediction_results = st.session_state.prediction_results
+
+    st.subheader("Model Performance")
+
+    st.dataframe(
+        results,
+        hide_index=True,
+        use_container_width=True,
+    )
+
+    best_model = results.iloc[0]
+
+    st.subheader("Best Performing Model")
+
+    st.metric(
+        label="Best Model (lowest MAE)",
+        value=best_model["Model"],
+        delta=f"MAE: {best_model['MAE']:.3f}",
+        delta_color="off",
+    )
+
+    # Your bar chart goes here
+    st.subheader("Model Performance Comparison")
+
+    fig = px.bar(
+        results,
+        x="Model",
+        y="MAE",
+        color="Model",
+        title="Mean Absolute Error by Model",
+        labels={
+            "MAE": "Mean Absolute Error",
+            "Model": "Regression Model",
+        },
+    )
+
+    fig.update_layout(
+        showlegend=False,
+        yaxis_title="Mean Absolute Error",
+        xaxis_title="",
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    # Your actual vs. predicted chart goes here
+    st.subheader("Actual vs. Predicted")
+    
+    selected_model = st.selectbox(
+        "Choose a model",
+        options=results["Model"].tolist(),
+    )
+
+    # Get predictions for the selected model
+    plot_data = prediction_results[["actual", selected_model]].copy()
+
+    plot_data = plot_data.rename(
+        columns={
+            "actual": "Actual",
+            selected_model: "Predicted",
+        }
+    )
+
+    fig = px.scatter(
+        plot_data,
+        x="Actual",
+        y="Predicted",
+        title=f"Actual vs. Predicted: {selected_model}",
+        labels={
+            "Actual": "Actual Values",
+            "Predicted": "Predicted Values",
+        },
+    )
+
+    # Add a perfect-prediction reference line
+    minimum = min(
+        plot_data["Actual"].min(),
+        plot_data["Predicted"].min(),
+    )
+
+    maximum = max(
+        plot_data["Actual"].max(),
+        plot_data["Predicted"].max(),
+    )
+
+    fig.add_shape(
+        type="line",
+        x0=minimum,
+        y0=minimum,
+        x1=maximum,
+        y1=maximum,
+        line=dict(dash="dash"),
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+    
