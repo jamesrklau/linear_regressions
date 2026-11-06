@@ -11,6 +11,7 @@ The goal is to make regression model evaluation straightforward, consistent, and
 ## Dashboard Preview
 
 <img width="1418" height="670" alt="Image" src="https://github.com/user-attachments/assets/1d77b073-4c2e-4519-bd1a-e58e7ed3e836" />
+<img width="1415" height="564" alt="Image" src="https://github.com/user-attachments/assets/97b732bd-14c1-48e1-99c5-4d1bf4b5ac89" />
 
 ## Features
 
