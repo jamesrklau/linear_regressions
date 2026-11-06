@@ -134,6 +134,28 @@ if st.session_state.results is not None:
         use_container_width=True,
     )
 
+    st.subheader("Download Results")
+
+    # Download model comparison metrics
+    metrics_csv = results.to_csv(index=False).encode("utf-8")
+
+    st.download_button(
+        label="Download Model Metrics",
+        data=metrics_csv,
+        file_name="model_comparison_results.csv",
+        mime="text/csv",
+    )
+
+    # Download actual and predicted values
+    predictions_csv = prediction_results.to_csv(index=False).encode("utf-8")
+
+    st.download_button(
+        label="Download Predictions",
+        data=predictions_csv,
+        file_name="model_predictions.csv",
+        mime="text/csv",
+    )
+
     best_model = results.iloc[0]
 
     st.subheader("Best Performing Model")
@@ -218,4 +240,67 @@ if st.session_state.results is not None:
     )
 
     st.plotly_chart(fig, use_container_width=True)
+
+
+    # Residual analysis
+    st.subheader("Residual Analysis")
+
+    # Calculate residuals for the selected model
+    residual_data = plot_data.copy()
+
+    residual_data["Residual"] = (
+        residual_data["Actual"] - residual_data["Predicted"]
+    )
+
+    # Residuals vs. predicted values
+    st.subheader("Residuals vs. Predicted Values")
+
+    residual_fig = px.scatter(
+        residual_data,
+        x="Predicted",
+        y="Residual",
+        title=f"Residual Analysis: {selected_model}",
+        labels={
+            "Predicted": "Predicted Values",
+            "Residual": "Residual (Actual - Predicted)",
+        },
+    )
+
+    # Add a zero-reference line
+    residual_fig.add_hline(
+        y=0,
+        line_dash="dash",
+        annotation_text="Zero Error",
+    )
+
+    st.plotly_chart(
+        residual_fig,
+        use_container_width=True,
+    )
+
+    # Residual distribution
+    st.subheader("Residual Distribution")
+
+    histogram_fig = px.histogram(
+        residual_data,
+        x="Residual",
+        nbins=20,
+        title=f"Distribution of Residuals: {selected_model}",
+        labels={
+            "Residual": "Prediction Error",
+            "count": "Number of Predictions",
+        },
+    )
+
+    histogram_fig.add_vline(
+        x=0,
+        line_dash="dash",
+        annotation_text="Zero Error",
+    )
+
+    st.plotly_chart(
+        histogram_fig,
+        use_container_width=True,
+    )
+
     
