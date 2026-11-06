@@ -10,8 +10,7 @@ The goal is to make regression model evaluation straightforward, consistent, and
 
 ## Dashboard Preview
 
-<!-- Add a screenshot of the dashboard here -->
-![Regression Dashboard](docs/images/dashboard-overview.png)
+<img width="1418" height="670" alt="Image" src="https://github.com/user-attachments/assets/1d77b073-4c2e-4519-bd1a-e58e7ed3e836" />
 
 ## Features
 
