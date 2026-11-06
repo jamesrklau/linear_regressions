@@ -1,65 +1,257 @@
-# Regression Model Evaluation
-This Python script performs regression model evaluation on a given dataset. It includes the following steps:
+# Regression Model Comparison Toolkit
 
-Prerequisites
-Before running the script, ensure that you have the following dependencies installed:
+A Python toolkit for training, evaluating, and comparing multiple regression models on structured datasets.
 
-scipy
-scikit-learn
-pandas
-You can install the required dependencies using pip:
+The project provides two ways to interact with the toolkit:
+- **Command-line interface (CLI):** Run model comparisons directly against a CSV dataset.
+- **Streamlit dashboard:** Upload a dataset, select a target variable, compare model performance, explore visualizations, and download results.
 
+The goal is to make regression model evaluation straightforward, consistent, and accessible while demonstrating practical machine learning workflows in Python.
+
+## Dashboard Preview
+
+<!-- Add a screenshot of the dashboard here -->
+![Regression Dashboard](docs/images/dashboard-overview.png)
+
+## Features
+
+- Compare six regression models using the same training and validation split.
+- Automatically preprocess numeric and categorical features.
+- Handle missing feature values through imputation.
+- Evaluate model performance using MAE, RMSE, and R².
+- Sort models by Mean Absolute Error (MAE).
+- Explore actual-versus-predicted values.
+- Analyze prediction errors through residual plots and histograms.
+- Download model metrics and individual predictions as CSV files.
+- Configure validation split and random states.
+- Run automated tests with pytest.
+
+## Models
+
+The toolkit evaluates the following models:
+
+| Model | Description |
+|---|---|
+| Baseline (Mean) | Predicts the mean of the training target values. |
+| AdaBoost | Combines multiple weak learners into an ensemble. |
+| Gradient Boosting | Builds an ensemble sequentially to improve prediction accuracy. |
+| Ridge Regression | Linear regression with L2 regularization. |
+| Lasso Regression | Linear regression with L1 regularization. |
+| Elastic Net | Combines L1 and L2 regularization. |
+
+All models are evaluated using the same held-out validation dataset to support a consistent comparison.
+
+## Evaluation Metrics
+
+The toolkit reports three commonly used regression metrics:
+
+- **Mean Absolute Error (MAE):** Average absolute difference between actual and predicted values. Lower is better.
+- **Root Mean Squared Error (RMSE):** Measures prediction error while penalizing larger errors more heavily. Lower is better.
+- **R² Score:** Measures how much variation in the target variable is explained by the model. Higher is generally better.
+
+Models are ranked by MAE, with the lowest-error model appearing first.
+
+## Data Preparation
+
+The toolkit supports datasets containing numeric and categorical features.
+
+Preprocessing includes:
+
+- Median imputation for missing numeric values.
+- Standard scaling for numeric features.
+- Most-frequent imputation for missing categorical values.
+- One-hot encoding for categorical features.
+- Validation of target columns and unsupported data types.
+
+The target column must contain numeric values. Rows with missing target values are excluded because they cannot be used for supervised learning.
+
+## Getting Started
+
+### Requirements
+
+- Python 3.10 or later
+- pip
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/jamesrklau/linear_regressions.git
+cd linear_regressions
 ```
-bash
-Copy code
-pip install scipy scikit-learn pandas
+
+### 2. Create and activate a virtual environment
+
+```bash
+python -m venv .venv
 ```
 
-# Usage
-Prepare a CSV file containing the regression data. The CSV file should have columns representing features and a target variable column.
+macOS / Linux:
 
-Run the script regression_evaluation.py with the following command:
-
-```
-bash
-Copy code
-python regression_evaluation.py -C <csv_file> -V <target_variable>
+```bash
+source .venv/bin/activate
 ```
 
-Replace <csv_file> with the path to your CSV file and <target_variable> with the name of the target variable column in the CSV file.
+Windows:
 
-For example:
-
-```
-bash
-Copy code
-python regression_evaluation.py -C regression_data.csv -V target_variable
+```bash
+.venv\Scripts\activate
 ```
 
-The script will perform the following steps:
-Read the regression data from the specified CSV file.
-Remove rows with null values in the target variable column.
-Separate the target variable and feature columns.
-Select only numerical feature columns.
-Split the data into training and validation sets.
-Initialize a list of regression models to be evaluated.
-For each model, perform the following:
-Fit the model to the training data.
-Make predictions on the validation data.
-Calculate the mean absolute error (MAE) between the predicted and actual target values.
-Store the z-scores of the predictions in the regression data.
-Save the updated regression data to a new CSV file, appending "_bpi" to the original filename.
-Once the script finishes running, it will display "Done" in the console, indicating that the regression model evaluation is complete. The updated regression data with z-scores will be saved in a new CSV file.
-# Notes
-The script includes a models_list function that returns a list of regression models to be evaluated. You can modify this function to include or remove models based on your requirements.
+### 3. Install dependencies
 
-The script uses the mean_absolute_error function from scikit-learn to calculate the MAE. You can replace it with a different evaluation metric if desired.
+For normal usage:
 
-It is recommended to preprocess the data and perform any necessary feature engineering before running the script.
+```bash
+pip install -r requirements.txt
+```
 
-The script saves the updated regression data with z-scores to a new CSV file to preserve the original data. If you want to overwrite the original file, you can modify the code accordingly.
+To install development dependencies, including pytest:
 
-The script assumes that the target variable is continuous and requires regression analysis. If you have a classification problem or different evaluation requirements, you may need to modify the code accordingly.
+```bash
+pip install -r requirements-dev.txt
+```
 
-# License
-This project is licensed under the MIT License. See the LICENSE file for details.
+## Using the Command-Line Interface
+
+The CLI accepts a CSV file and the name of the target column.
+
+Example:
+
+```bash
+python linear_regressions.py \
+  --csv examples/student_performance_synthetic.csv \
+  --var_name final_score
+```
+
+Optional configuration arguments:
+
+| Argument | Description | Default |
+|---|---|---|
+| `--test_size` | Proportion of data reserved for validation | `0.25` |
+| `--random_state` | Random state for the train/validation split | `0` |
+| `--model_random_state` | Random state for supported models | `1` |
+
+Example with custom settings:
+
+```bash
+python linear_regressions.py \
+  --csv examples/student_performance_synthetic.csv \
+  --var_name final_score \
+  --test_size 0.20 \
+  --random_state 42 \
+  --model_random_state 42
+```
+
+The CLI evaluates the models and saves a CSV report containing their performance metrics.
+
+## Using the Streamlit Dashboard
+
+Launch the interactive dashboard:
+
+```bash
+streamlit run app.py
+```
+
+The dashboard allows you to:
+
+1. Upload a CSV dataset.
+2. Preview the uploaded data.
+3. Select the target variable.
+4. Configure the validation split and random states.
+5. Run the model comparison.
+6. Review model performance metrics and identify the best-performing model by MAE.
+7. Explore actual-versus-predicted visualizations.
+8. Investigate residuals and prediction error distributions.
+9. Download model metrics and prediction results.
+
+### Dashboard Screenshots
+
+**Model Performance**
+
+<!-- Add screenshot showing the metrics table and best-performing model -->
+![Model Performance](docs/images/model-performance.png)
+
+**Model Visualizations**
+
+<!-- Add screenshot showing actual vs predicted and residual analysis -->
+![Model Visualizations](docs/images/model-visualizations.png)
+
+**Downloadable Results**
+
+<!-- Optional screenshot showing the download section -->
+![Download Results](docs/images/download-results.png)
+
+## Example Dataset
+
+The repository includes a synthetic student performance dataset:
+
+`examples/student_performance_synthetic.csv`
+
+The dataset contains 240 rows and includes features such as:
+
+- Study hours per week
+- Attendance percentage
+- Practice tests completed
+- Prior academic score
+- Sleep hours per night
+- Commute time
+
+The target variable is `final_score`.
+
+This dataset provides a reproducible example for testing the toolkit without requiring an external data source.
+
+## Running Tests
+
+The project uses pytest for automated testing.
+
+Run the full test suite:
+
+```bash
+python -m pytest -v
+```
+
+Tests cover model evaluation, preprocessing, data validation, CLI configuration, invalid inputs, and reproducibility.
+
+## Project Structure
+
+```text
+linear_regressions/
+│
+├── examples/
+│   └── student_performance_synthetic.csv
+│
+├── regression_toolkit/
+│   ├── __init__.py
+│   ├── data.py
+│   ├── models.py
+│   ├── evaluation.py
+│   └── cli.py
+│
+├── tests/
+│   └── test_evaluation.py
+│
+├── app.py
+├── linear_regressions.py
+├── requirements.txt
+├── requirements-dev.txt
+├── .gitignore
+└── README.md
+```
+
+## Technologies
+
+- **Python** — Core application and machine learning workflow.
+- **Pandas** — Data loading, manipulation, and reporting.
+- **NumPy** — Numerical operations.
+- **Scikit-learn** — Regression models, preprocessing pipelines, and evaluation metrics.
+- **Streamlit** — Interactive web dashboard.
+- **Plotly** — Interactive data visualizations.
+- **Pytest** — Automated testing.
+
+## Future Improvements
+
+This project focuses on a practical, local model-comparison workflow. Potential future enhancements could include additional model families, configurable preprocessing options, and more advanced evaluation techniques.
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.
